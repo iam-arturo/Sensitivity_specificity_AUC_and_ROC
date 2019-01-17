@@ -1,0 +1,146 @@
+
+# coding: utf-8
+
+# # Data Scientist Screening Exercise - Arturo Rodriguez 
+
+
+# Importing necessary libraries
+
+
+import pandas as pd
+import numpy as np
+
+from sklearn import metrics
+import matplotlib.pyplot as plt
+
+
+# Importing the dataset
+# This will only work for the Jupyter notebook if the file 'model_outcome.csv'
+# is located in the same directory as this script
+
+df = pd.read_csv('model_outcome.csv')
+
+
+
+# Let's take a look
+
+print(df.head(10),'\n')
+
+print(df.info(),'\n')
+
+print(df.describe(),'\n')
+
+
+# 1. Manually calculate the sensitivity and specificity of the model, using
+# a predicted_prob threshold of greater than or equal to .5 
+
+# Converting predicted values into classes using threshold
+
+threshold = 0.5
+
+predicted_class = np.zeros(df['predicted_prob'].shape)
+predicted_class[df['predicted_prob'] > threshold] = 1
+print('predicted_class first ten elements: ',predicted_class[0:9],'\n')
+
+
+# Confusion matrix, Accuracy, sensitivity and specificity
+from sklearn.metrics import confusion_matrix
+
+cm = confusion_matrix(df[['class']],predicted_class)
+print('Confusion Matrix : \n', cm)
+
+total=sum(sum(cm))
+# Accuracy is not specifically asked, but it's always good to know
+# Accuracy = (TN + TP)/Total
+accuracy=(cm[0,0] + cm[1,1]) / total
+print ('Accuracy : ', accuracy)
+
+# Sensitivity = TP / (TP + FN)
+sensitivity = cm[1,1]/(cm[1,1]+cm[1,0])
+print('Sensitivity : ', sensitivity )
+
+# Specifity = TN / (FP + TN)
+specificity = cm[0,0]/(cm[0,1]+cm[0,0])
+print('Specificity : ', specificity)
+
+
+# Let's manually double check
+
+
+# This is computationally more expensive, but it's just for double checking purposes
+
+TP = 0
+FN = 0
+FP = 0
+TN = 0
+
+
+for i in range(0,df.shape[0]):
+    if df.iloc[i]['class'] == predicted_class[i] == 1:
+        TP += 1
+    elif df.iloc[i]['class'] == 0 and predicted_class[i] == 1:
+        FP += 1
+    elif df.iloc[i]['class'] == predicted_class[i] == 0:
+        TN += 1        
+    elif df.iloc[i]['class'] == 1 and predicted_class[i] == 0:
+        FN += 1
+
+# Sensitivity = TP / (TP + FN)
+sensitivity_doublecheck = TP / (TP + FN)
+print('Sensitivity_doublecheck : ', sensitivity_doublecheck )
+
+# Specifity = TN / (FP + TN)
+specificity_doublecheck = TN / (FP + TN)
+print('Specificity_doublecheck : ', specificity_doublecheck)
+
+
+# 2. Manually calculate the Area Under the Receiver Operating Characteristic Curve
+
+
+# Calculate the fpr and tpr for all thresholds of the classification
+fpr, tpr, thresholds = metrics.roc_curve(df['class'],df['predicted_prob'])
+roc_auc = metrics.auc(fpr, tpr)
+print('Area Under the Receiver Operating Characteristic Curve: ', roc_auc)
+
+
+# Let's manualy double check 
+# Sort the dataframe by predicted_prob
+# Again, this is computanionally more expensive, but it's just for double checking purposes
+
+df_sorted = df.sort_values(['predicted_prob'], ascending = False)
+df_sorted.head(3)
+
+
+auc_doublecheck = 0.0
+height = 0.0
+
+# pos = total number of true positives
+# neg = total number of true negatives
+
+pos = sum(df['class'])
+neg = df.shape[0] - pos
+
+for index, row in df_sorted.iterrows():
+  if row['class'] == 1:
+    height += 1/pos
+  else:
+    auc_doublecheck += height * 1/neg
+
+print('auc_doublecheck: ',auc_doublecheck)
+
+
+# 3. Visualize the Receiver Operating Characterstic Curve.
+
+
+plt.title('Receiver Operating Characteristic')
+plt.plot(fpr, tpr, 'b', label = 'AUC = %0.3f' % roc_auc)
+plt.legend(loc = 'lower right')
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0, 1])
+plt.ylim([0, 1])
+plt.ylabel('True Positive Rate')
+plt.xlabel('False Positive Rate')
+plt.show()
+
+
+# Thanks for watching!
