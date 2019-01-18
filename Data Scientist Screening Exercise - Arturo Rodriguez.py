@@ -39,7 +39,7 @@ print(df.describe(),'\n')
 threshold = 0.5
 
 predicted_class = np.zeros(df['predicted_prob'].shape)
-predicted_class[df['predicted_prob'] > threshold] = 1
+predicted_class[df['predicted_prob'] >= threshold] = 1
 print('predicted_class first ten elements: ',predicted_class[0:9],'\n')
 
 
